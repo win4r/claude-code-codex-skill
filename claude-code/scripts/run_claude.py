@@ -18,6 +18,7 @@ EFFORT_LEVELS = ("low", "medium", "high", "xhigh", "max")
 
 
 def read_text(path: Path) -> str:
+    path = path.expanduser()
     try:
         return path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -58,13 +59,17 @@ def build_parser() -> argparse.ArgumentParser:
 def preflight(claude: str, cwd: Path, skip_auth: bool) -> None:
     if skip_auth:
         return
-    result = subprocess.run(
-        [claude, "auth", "status", "--text"],
-        cwd=str(cwd),
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+    try:
+        result = subprocess.run(
+            [claude, "auth", "status", "--text"],
+            cwd=str(cwd),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise SystemExit("Claude Code auth preflight timed out after 30 seconds.") from exc
     if result.returncode != 0:
         sys.stderr.write(result.stdout)
         sys.stderr.write(result.stderr)
@@ -83,11 +88,14 @@ def main() -> int:
     if not cwd.is_dir():
         raise SystemExit(f"--cwd is not a directory: {cwd}")
 
-    if args.task and args.task_file:
+    if args.task is not None and args.task_file:
         raise SystemExit("Use either --task or --task-file, not both.")
     task = args.task if args.task is not None else read_text(args.task_file) if args.task_file else None
     if not task:
         raise SystemExit("Provide --task or --task-file.")
+
+    if args.continue_session and args.resume:
+        raise SystemExit("Use either --continue-session or --resume, not both.")
 
     if args.mode == "bypassPermissions" and not args.allow_bypass:
         raise SystemExit("Refusing bypassPermissions without --allow-bypass.")
@@ -97,8 +105,6 @@ def main() -> int:
             "Warning: --bare skips OAuth/keychain reads. It usually requires ANTHROPIC_API_KEY "
             "or an apiKeyHelper in --settings.\n"
         )
-
-    preflight(claude, cwd, args.skip_auth_check)
 
     cmd = [claude]
     if args.bare:
@@ -121,7 +127,7 @@ def main() -> int:
         ("--max-turns", str(args.max_turns) if args.max_turns is not None else None),
         ("--max-budget-usd", args.max_budget_usd),
         ("--append-system-prompt", args.append_system_prompt),
-        ("--append-system-prompt-file", str(args.append_system_prompt_file) if args.append_system_prompt_file else None),
+        ("--append-system-prompt-file", str(args.append_system_prompt_file.expanduser()) if args.append_system_prompt_file else None),
         ("--settings", args.settings),
         ("--mcp-config", args.mcp_config),
     ]
@@ -136,6 +142,8 @@ def main() -> int:
     if args.dry_run:
         print(" ".join(shlex.quote(part) for part in cmd))
         return 0
+
+    preflight(claude, cwd, args.skip_auth_check)
 
     try:
         completed = subprocess.run(

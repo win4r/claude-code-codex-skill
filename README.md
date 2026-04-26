@@ -10,8 +10,10 @@ Clone this repository and copy the skill directory into Codex's skills folder:
 
 ```bash
 git clone https://github.com/win4r/claude-code-codex-skill.git
-mkdir -p ~/.codex/skills
-cp -R claude-code-codex-skill/claude-code ~/.codex/skills/claude-code
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+mkdir -p "$CODEX_HOME/skills"
+rm -rf "$CODEX_HOME/skills/claude-code"
+cp -R claude-code-codex-skill/claude-code "$CODEX_HOME/skills/"
 ```
 
 Then invoke it in Codex with `$claude-code` when you want Codex to consult or delegate work to Claude Code.
@@ -26,4 +28,5 @@ Then invoke it in Codex with `$claude-code` when you want Codex to consult or de
 
 - Claude Code CLI installed and on `PATH`.
 - `claude auth status --text` succeeds.
-- Codex can read `~/.codex/skills/claude-code`.
+- Python 3 is available on `PATH`.
+- Codex can read `${CODEX_HOME:-$HOME/.codex}/skills/claude-code`.

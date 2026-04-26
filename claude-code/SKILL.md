@@ -34,6 +34,8 @@ python3 "$SKILL_DIR/scripts/run_claude.py" \
   --task "Analyze the authentication flow and return a concise implementation plan. Do not edit files."
 ```
 
+Wrapper flags use kebab-case for Codex ergonomics; the wrapper translates them to Claude Code's camelCase flags where needed, such as `--allowed-tools` to `--allowedTools`.
+
 4. After Claude Code returns, inspect `git status --short` and `git diff` yourself.
 5. Run the relevant tests or checks in Codex, even if Claude Code says it already did.
 6. Report what Claude Code did separately from what Codex verified or changed afterward.
@@ -111,6 +113,7 @@ python3 "$SKILL_DIR/scripts/run_claude.py" \
 - Never pass secrets, API keys, tokens, private credentials, or raw `.env` contents in a prompt.
 - Do not assume Claude Code's summary is true. Verify diffs and tests locally.
 - Keep delegated tasks bounded. If Claude Code fails twice on the same issue, start a fresh prompt with the new evidence instead of continuing a polluted session.
+- For unattended or long-running work, pass `--timeout <seconds>` so the wrapper cannot run indefinitely.
 - Preserve user changes. If Claude Code edits unrelated files or conflicts with user work, stop and inspect before proceeding.
 - For parallel Claude Code runs, use separate git worktrees or other isolated directories so changes cannot collide.
 
