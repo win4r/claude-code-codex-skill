@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Code"
+  short_description: "Delegate development tasks to Claude Code"
+  default_prompt: "Use $claude-code to run Claude Code on this repository task."
