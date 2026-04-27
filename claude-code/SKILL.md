@@ -108,6 +108,27 @@ python3 "$SKILL_DIR/scripts/run_claude.py" \
   --task "Continue the previous investigation and focus only on database query performance."
 ```
 
+Low-noise read-only review fallback:
+
+```bash
+python3 "$SKILL_DIR/scripts/run_claude.py" \
+  --cwd "$PWD" \
+  --mode plan \
+  --output-format text \
+  --tools "Read,Grep,Glob" \
+  --max-turns 6 \
+  --timeout 180 \
+  --setting-sources project \
+  --mcp-config '{}' \
+  --strict-mcp-config \
+  --no-chrome \
+  --no-session-persistence \
+  --disable-slash-commands \
+  --task "Review this project read-only. Return findings first with file paths."
+```
+
+If a normal read-only run produces no stdout for about 60-90 seconds, inspect `pgrep -fl 'claude|run_claude.py|bun run --cwd .*\\.claude/plugins'`. If plugin, MCP, or Chrome startup is visible, stop that run and retry with the low-noise command above. For small repos or repeated stalls, avoid tool traversal entirely: pipe a curated snapshot of key files to `claude -p` and ask for review based only on the provided text.
+
 ## Guardrails
 
 - Never pass secrets, API keys, tokens, private credentials, or raw `.env` contents in a prompt.

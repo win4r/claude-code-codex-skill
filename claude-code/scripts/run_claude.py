@@ -45,6 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--append-system-prompt-file", type=Path, help="Append system prompt text from a file.")
     parser.add_argument("--settings", help="Settings JSON file path or JSON string to pass to Claude Code.")
     parser.add_argument("--mcp-config", help="MCP config JSON file path or JSON string to pass to Claude Code.")
+    parser.add_argument("--strict-mcp-config", action="store_true", help="Only use MCP servers from --mcp-config.")
+    parser.add_argument("--setting-sources", help="Comma-separated Claude Code setting sources, for example project.")
+    parser.add_argument("--no-chrome", action="store_true", help="Disable Claude in Chrome integration for this run.")
+    parser.add_argument("--no-session-persistence", action="store_true", help="Do not persist the Claude Code print-mode session.")
+    parser.add_argument("--disable-slash-commands", action="store_true", help="Disable slash commands and skill/plugin loading for this run.")
     parser.add_argument("--add-dir", action="append", default=[], help="Additional directory Claude Code may access.")
     parser.add_argument("--continue-session", action="store_true", help="Continue the most recent Claude Code conversation.")
     parser.add_argument("--resume", help="Resume a Claude Code session by ID or name.")
@@ -130,10 +135,19 @@ def main() -> int:
         ("--append-system-prompt-file", str(args.append_system_prompt_file.expanduser()) if args.append_system_prompt_file else None),
         ("--settings", args.settings),
         ("--mcp-config", args.mcp_config),
+        ("--setting-sources", args.setting_sources),
     ]
     for flag, value in option_pairs:
         if value is not None:
             cmd.extend([flag, value])
+    if args.strict_mcp_config:
+        cmd.append("--strict-mcp-config")
+    if args.no_chrome:
+        cmd.append("--no-chrome")
+    if args.no_session_persistence:
+        cmd.append("--no-session-persistence")
+    if args.disable_slash_commands:
+        cmd.append("--disable-slash-commands")
     for path in args.add_dir:
         cmd.extend(["--add-dir", path])
 
