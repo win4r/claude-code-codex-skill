@@ -78,6 +78,8 @@ python3 "$SKILL_DIR/scripts/run_claude.py" \
   --task "Review the current diff for correctness risks. Do not edit files. Return findings first with file paths."
 ```
 
+Do not use `--max-turns 1` for Claude Code smoke tests or reviews. On this machine even a trivial `Reply exactly: CLAUDE_OK` prompt can fail with `Error: Reached max turns (1)`. Use at least `--max-turns 3` for smoke prompts and `--max-turns 4-8` for reviews.
+
 Implementation with narrow approvals:
 
 ```bash
@@ -119,7 +121,7 @@ python3 "$SKILL_DIR/scripts/run_claude.py" \
   --max-turns 6 \
   --timeout 180 \
   --setting-sources project \
-  --mcp-config '{}' \
+  --mcp-config '{"mcpServers":{}}' \
   --strict-mcp-config \
   --no-chrome \
   --no-session-persistence \
@@ -127,7 +129,30 @@ python3 "$SKILL_DIR/scripts/run_claude.py" \
   --task "Review this project read-only. Return findings first with file paths."
 ```
 
-If a normal read-only run produces no stdout for about 60-90 seconds, inspect `pgrep -fl 'claude|run_claude.py|bun run --cwd .*\\.claude/plugins'`. If plugin, MCP, or Chrome startup is visible, stop that run and retry with the low-noise command above. For small repos or repeated stalls, avoid tool traversal entirely: pipe a curated snapshot of key files to `claude -p` and ask for review based only on the provided text.
+Use `{"mcpServers":{}}`, not `{}`, when disabling MCP servers with `--strict-mcp-config`; Claude Code rejects `{}` as an invalid MCP configuration.
+
+If a normal read-only run produces no stdout for about 60-90 seconds, inspect `pgrep -fl 'claude|run_claude.py|bun run --cwd .*\\.claude/plugins'`. If plugin, MCP, or Chrome startup is visible, stop that run and retry with the low-noise command above. If no plugin/MCP startup is visible, remember that print mode may stay silent until completion; enforce the wrapper timeout and avoid repeatedly extending the same run.
+
+If a review run times out, run a minimal smoke check before blaming authentication or installation:
+
+```bash
+python3 "$SKILL_DIR/scripts/run_claude.py" \
+  --cwd "$PWD" \
+  --mode plan \
+  --output-format text \
+  --model sonnet \
+  --max-turns 3 \
+  --timeout 45 \
+  --setting-sources project \
+  --mcp-config '{"mcpServers":{}}' \
+  --strict-mcp-config \
+  --no-chrome \
+  --no-session-persistence \
+  --disable-slash-commands \
+  --task "Reply exactly: CLAUDE_OK"
+```
+
+For repeated review stalls, avoid full-file snapshots. Try a very small line-numbered excerpt of only the risky code paths; if that still times out around 75-120 seconds while the smoke check passes, stop delegating the review and continue with Codex-local inspection plus tests. Report this as a Claude Code review-path timeout, not as a project test failure.
 
 ## Guardrails
 
