@@ -1,3 +1,5 @@
+# [🚀观看我的哔哩哔哩视频](https://space.bilibili.com/3493277319825652)
+
 # Claude Code Codex Skill
 
 Codex skill for invoking the local Claude Code CLI as a delegated development agent.
